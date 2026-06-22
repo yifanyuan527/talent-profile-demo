@@ -1,0 +1,314 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>人才画像问卷</title>
+    <style>
+      :root {
+        --ink: #17212b;
+        --muted: #66717e;
+        --line: #d9e0e8;
+        --teal: #087b83;
+        --navy: #121f25;
+        --page: #f3f6f8;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        background: var(--page);
+        color: var(--ink);
+        font-family: "PingFang SC", "Microsoft YaHei", system-ui, sans-serif;
+      }
+
+      main {
+        max-width: 920px;
+        margin: 0 auto;
+        padding: 28px 18px;
+      }
+
+      header,
+      form,
+      .result {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fff;
+        padding: 22px;
+        margin-bottom: 16px;
+      }
+
+      h1,
+      h2,
+      p {
+        margin: 0;
+      }
+
+      h1 {
+        font-size: clamp(28px, 5vw, 42px);
+      }
+
+      header p,
+      .muted {
+        margin-top: 8px;
+        color: var(--muted);
+        line-height: 1.6;
+      }
+
+      label {
+        display: grid;
+        gap: 8px;
+        margin-top: 16px;
+        color: var(--muted);
+        font-weight: 800;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        min-height: 42px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 10px 12px;
+        font: inherit;
+      }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 14px;
+      }
+
+      .question {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+      }
+
+      .range-line {
+        display: grid;
+        grid-template-columns: 1fr 42px;
+        gap: 10px;
+        align-items: center;
+        margin-top: 12px;
+      }
+
+      input[type="range"] {
+        accent-color: var(--teal);
+      }
+
+      b {
+        display: grid;
+        place-items: center;
+        min-height: 34px;
+        border-radius: 8px;
+        background: var(--navy);
+        color: #fff;
+      }
+
+      button {
+        min-height: 44px;
+        border: 0;
+        border-radius: 8px;
+        background: var(--navy);
+        color: #fff;
+        padding: 10px 16px;
+        font: inherit;
+        font-weight: 900;
+        cursor: pointer;
+      }
+
+      textarea {
+        resize: vertical;
+        line-height: 1.6;
+      }
+
+      .submit-status {
+        display: none;
+        border: 1px solid #b9ddd8;
+        border-radius: 8px;
+        background: #edf8f6;
+        color: #075f64;
+        padding: 12px 14px;
+        margin-top: 14px;
+        font-weight: 800;
+        line-height: 1.6;
+      }
+
+      .submit-status.is-visible {
+        display: block;
+      }
+
+      @media (max-width: 720px) {
+        .grid {
+          grid-template-columns: 1fr;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main>
+      <header>
+        <h1 id="page-title">员工自评问卷</h1>
+        <p id="subtitle">由员工本人填写，重点采集发展意愿、学习敏捷度、协作偏好和自我能力判断。</p>
+      </header>
+
+      <form id="survey-form">
+        <div class="grid">
+          <label>
+            姓名
+            <input id="name" value="陈若溪" />
+          </label>
+          <label>
+            岗位类型
+            <select id="role">
+              <option>管理岗</option>
+              <option>技术岗</option>
+              <option>行政岗</option>
+            </select>
+          </label>
+        </div>
+
+        <div class="grid" id="questions"></div>
+        <label>
+          开放补充
+          <textarea id="open-comment" rows="4">希望未来承担更复杂项目，提升跨部门推动和团队带教能力。</textarea>
+        </label>
+        <button type="submit">提交问卷</button>
+        <p class="submit-status" id="submit-status"></p>
+      </form>
+    </main>
+
+    <script>
+      const selfBanks = {
+        管理岗: [
+          ["业务理解", "我能把部门目标拆解成清晰的团队行动计划"],
+          ["管理潜力", "面对更大团队或更复杂目标时，我希望有机会承担主责"],
+          ["协作影响力", "我能主动推动跨部门资源协同并解决冲突"],
+          ["学习敏捷度", "面对新业务时，我能快速试错并复盘沉淀"],
+          ["执行稳定性", "我能稳定管理重点项目节奏和结果追踪"],
+          ["发展意愿", "我愿意进入更高责任培养或晋升观察"],
+          ["管理潜力", "我愿意带新人、做导师，并持续投入他人的成长"],
+          ["协作影响力", "我更倾向于主动连接资源，而不是只完成自己负责的部分"],
+          ["学习敏捷度", "遇到不确定任务时，我通常会先尝试、验证，再调整方法"],
+          ["执行稳定性", "压力较大或信息不完整时，我倾向于先自己拆解问题而非求助"],
+        ],
+        技术岗: [
+          ["专业能力", "我能独立解决复杂技术问题并形成方案"],
+          ["学习敏捷度", "我能快速掌握新技术并用于实际项目"],
+          ["业务理解", "我理解技术方案对业务指标和用户体验的影响"],
+          ["协作影响力", "我愿意通过文档、评审和辅导影响团队质量"],
+          ["执行稳定性", "我在关键交付中的质量、进度和风险控制稳定"],
+          ["发展意愿", "我愿意承担技术攻坚、技术负责人或导师角色"],
+          ["协作影响力", "我愿意带新人、做技术辅导，并把经验沉淀给团队"],
+          ["学习敏捷度", "我对新工具、新框架或新技术方向保持好奇并愿意试用"],
+          ["执行稳定性", "面对线上问题或紧急交付时，我倾向于先定位关键风险，再拉齐相关人协同解决"],
+          ["发展意愿", "相比只完成分配任务，我更愿意主动寻找可以改进的技术问题"],
+        ],
+        行政岗: [
+          ["执行稳定性", "我能长期稳定维护流程、资产和服务响应"],
+          ["协作影响力", "我能协调多方需求并保障员工服务体验"],
+          ["业务理解", "我理解行政支持对组织效率和成本的影响"],
+          ["专业能力", "我熟悉制度、供应商、预算或办公空间管理"],
+          ["学习敏捷度", "我能持续优化流程并引入更高效工具"],
+          ["发展意愿", "我愿意承担更大范围的组织支持职责"],
+          ["协作影响力", "我愿意主动帮助新人熟悉流程和组织规则"],
+          ["执行稳定性", "面对临时需求或突发事件时，我倾向于先梳理优先级，再协调资源处理"],
+          ["学习敏捷度", "我愿意尝试新工具来提升流程效率和服务体验"],
+          ["发展意愿", "我愿意从日常支持延伸到项目统筹或流程建设"],
+        ],
+      };
+
+      const questionnaireType = "self";
+      const activeBanks = selfBanks;
+      const role = document.querySelector("#role");
+      const questions = document.querySelector("#questions");
+      const submitStatus = document.querySelector("#submit-status");
+
+      function applyMode() {
+        document.querySelector("#page-title").textContent = "员工自评问卷";
+        document.querySelector("#subtitle").textContent =
+          "由员工本人填写，重点采集发展意愿、带教意愿、学习敏捷度、抗压方式和协作偏好。";
+        document.querySelector("#open-comment").value =
+          "希望未来承担更复杂项目，提升跨部门推动和团队带教能力。";
+      }
+
+      function renderQuestions() {
+        questions.innerHTML = activeBanks[role.value]
+          .map(
+            ([dimension, text], index) => `
+              <label class="question">
+                ${text}
+                <div class="range-line">
+                  <input type="range" min="1" max="5" value="${index < 3 ? 4 : 3}" data-dimension="${dimension}" />
+                  <b>${index < 3 ? 4 : 3}</b>
+                </div>
+              </label>
+            `,
+          )
+          .join("");
+        questions.querySelectorAll("input").forEach((input) => {
+          input.addEventListener("input", () => {
+            input.nextElementSibling.textContent = input.value;
+          });
+        });
+      }
+
+      function collectAnswers() {
+        const buckets = {};
+        questions.querySelectorAll("input").forEach((input) => {
+          const dimension = input.dataset.dimension;
+          buckets[dimension] = buckets[dimension] || [];
+          buckets[dimension].push(Number(input.value));
+        });
+        return Object.fromEntries(
+          Object.entries(buckets).map(([dimension, values]) => [
+            dimension,
+            Math.round(values.reduce((sum, value) => sum + value, 0) / values.length),
+          ]),
+        );
+      }
+
+      function submitSurvey() {
+        const payload = {
+          type: questionnaireType,
+          typeLabel: "员工自评",
+          name: document.querySelector("#name").value.trim() || "未命名员工",
+          role: role.value,
+          answers: collectAnswers(),
+          comment: document.querySelector("#open-comment").value.trim(),
+          submittedAt: new Date().toISOString(),
+        };
+        const key = "talentProfileSurveySubmissions";
+        const submissions = JSON.parse(localStorage.getItem(key) || "[]");
+        const next = [
+          payload,
+          ...submissions.filter(
+            (item) => !(item.type === payload.type && item.name === payload.name && item.role === payload.role),
+          ),
+        ].slice(0, 50);
+        localStorage.setItem(key, JSON.stringify(next));
+        if (window.opener) {
+          const targetOrigin = window.location.origin === "null" ? "*" : window.location.origin;
+          window.opener.postMessage({ source: "talent-profile-survey", payload }, targetOrigin);
+        }
+        submitStatus.textContent = `已提交${payload.typeLabel}：${payload.name}（${payload.role}）。主页面会自动更新问卷状态并用于生成画像。`;
+        submitStatus.classList.add("is-visible");
+      }
+
+      role.addEventListener("change", () => {
+        renderQuestions();
+      });
+      document.querySelector("#survey-form").addEventListener("submit", (event) => {
+        event.preventDefault();
+        submitSurvey();
+      });
+      applyMode();
+      renderQuestions();
+    </script>
+  </body>
+</html>
